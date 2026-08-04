@@ -92,20 +92,44 @@ private:
 void PersonFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
 {
   std::lock_guard<std::recursive_mutex> cfl(mutex_);
-  /*TODO TASKS
 
-    MILESTONE #3.1 - Process the received scan_msg to get the location of the closest object in robot's environment.
-      NOTE: the four pillars of will be visible from the Lidar sensor, you have to remove the distance
-      measurements of these four pillars by ignoring any measurement less than 0.2 meter.
+  // finds the minimum element in the ranges vector of the scan_msg. It returns an iterator
+  // (min_distance) pointing to the smallest value in the range.
+  // filter out values < 0.2m
+  auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
+                                       {
+        bool a_valid = (a >= 0.2);
+        bool b_valid = (b >= 0.2);
+        if (a_valid && b_valid) return a < b;
+        if (a_valid) return true;
+        return false; });
+  // Extracts the actual minimum value from the iterator obtained in the previous step.
+  float min_value = *min_distance;
+  // Calculates the index of the minimum value in the ranges vector by finding the distance
+  // between the beginning of the vector and the iterator pointing to the minimum value.
+  int min_index = std::distance(scan_msg->ranges.begin(), min_distance);
+  // Calculate the angle corresponding to the index of the minimum value.
+  // float min_angle = (min_index - 320) * 2 * PI / 640.0;
 
-    MILESTONE #3.2. You have to calculate the bearing and the range of the closest object with respect to the robot frame. You have
-    to check the LaserScan message definition, and how the Lidar sensor is mounted with respective to
-    the robot's coordinate.
+  // calculate angle from lidar frame of reference
+  float l_min_angle = (scan_msg->angle_min) + scan_msg->angle_increment * min_index;
+  float r_min_angle = l_min_angle - PI / 2;
 
-    MILESTONE #3.3. Write a Person Follow Reactive Control that takes the bearing and range information of the closest
-    object in the environment as the input and publish a message on topic /cmd_vel to control the motion of
-    the robot.
-  */
+  geometry_msgs::msg::Twist cmd_vel_msg;
+
+  if (min_value < 12)
+  {
+    // make movement if the object is within 12m
+    cmd_vel_msg.angular.z = angle_control_gain_ * (r_min_angle - following_angle_);
+    cmd_vel_msg.linear.x = distance_control_gain_ * (min_value - following_distance_);
+  }
+  else
+  {
+    RCLCPP_INFO(this->get_logger(), "No Object is Detected");
+    cmd_vel_msg.linear.x = 0.0;
+  }
+
+  cmd_vel_publisher_->publish(cmd_vel_msg);
 }
 
 rcl_interfaces::msg::SetParametersResult
@@ -143,12 +167,6 @@ PersonFollower::dynamicParametersCallback(std::vector<rclcpp::Parameter> paramet
       {
         distance_control_gain_ = parameter.as_double();
       }
-
-      /*
-      TODO TASK 3 - MILESTONE # 2.1
-      Check whether other parameters should be updated and if yes,
-      store the updated value to the class variables defined in TASK 1 (Milestone # 1.1)
-      */
     }
   }
   result.successful = true;
