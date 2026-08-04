@@ -85,8 +85,6 @@ private:
    */
   rcl_interfaces::msg::SetParametersResult
   dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
-
-  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg);
 };
 
 void PersonFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
