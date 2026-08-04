@@ -12,6 +12,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+# Person Follower
 add_executable(person_follower src/person_follower.cpp)
 target_include_directories(person_follower PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -25,7 +26,22 @@ ament_target_dependencies(
   "sensor_msgs"
 )
 
-install(TARGETS person_follower
+# Wall Follower
+add_executable(wall_follower src/wall_follower.cpp)
+target_include_directories(wall_follower PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include>)
+target_compile_features(wall_follower PUBLIC c_std_99 cxx_std_17) # Require C99 and C++17
+ament_target_dependencies(
+wall_follower
+"rclcpp"
+"geometry_msgs"
+"nav_msgs"
+"sensor_msgs"
+)
+
+
+install(TARGETS person_follower wall_follower
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
