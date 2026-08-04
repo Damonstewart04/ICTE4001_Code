@@ -155,11 +155,7 @@ void TB4ArcActionServer::execute(const std::shared_ptr<rclcpp_action::ServerGoal
   {
     omega = -omega;
   }
-  if (goal->translate_direction < 0)
-  {
-    linear_v = -linear_v;
-  }
-  cmd_vel.linear.set__x(goal->max_translation_speed);
+  cmd_vel.linear.set__x(speed * goal->translate_direction);
   cmd_vel.angular.set__z(omega);
 
   int count = pub_freq * goal->angle / omega;
