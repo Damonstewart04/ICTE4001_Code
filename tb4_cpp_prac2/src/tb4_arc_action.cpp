@@ -154,11 +154,8 @@ void TB4ArcActionServer::execute(const std::shared_ptr<rclcpp_action::ServerGoal
   {
     omega = -omega;
   }
-  if (goal->translate_direction < 0)
-  {
-    linear_v = -linear_v;
-  }
-  cmd_vel.linear.set__x(goal->max_translation_speed);
+  
+  cmd_vel.linear.set__x(goal->translate_direction * linear_v);
   cmd_vel.angular.set__z(omega);
 
   int count = pub_freq * goal->angle / omega;
@@ -176,7 +173,6 @@ void TB4ArcActionServer::execute(const std::shared_ptr<rclcpp_action::ServerGoal
       RCLCPP_INFO(this->get_logger(), "Goal canceled");
       return;
     }
-    // TODO: calculate remaining_arc_distance
     remaining_travel_angle = goal->angle - omega * i / pub_freq;
     // Publish the command velocity
     cmd_vel_publisher_->publish(cmd_vel);
