@@ -24,12 +24,21 @@ public:
 
     // Declare parameters
     this->declare_parameter<double>("following_distance", 1.0);
+    this->declare_parameter<float>("following_angle", 0);
+    this->declare_parameter<float>("angle_control_gain", 1.0);
+    this->declare_parameter<float>("distance_control_gain", 0.5);
 
     // Get parameter values
     this->get_parameter("following_distance", following_distance_);
+    this->get_parameter("following_angle", following_angle_);
+    this->get_parameter("angle_control_gain", angle_control_gain_);
+    this->get_parameter("distance_control_gain", distance_control_gain_);
 
     // Print parameter values
     RCLCPP_INFO(this->get_logger(), "following_distance: %.2f", following_distance_);
+    RCLCPP_INFO(this->get_logger(), "following_angle: %.2f", following_angle_);
+    RCLCPP_INFO(this->get_logger(), "angle_control_gain: %.2f", angle_control_gain_);
+    RCLCPP_INFO(this->get_logger(), "distance_control_gain: %.2f", distance_control_gain_);
 
     //  Initalise the dynamic parameter handler
     dyn_params_handler_ = this->add_on_set_parameters_callback(
@@ -62,6 +71,10 @@ private:
     Define all private element variables to store parameters.
   */
   double following_distance_;
+  float following_angle_;
+  float angle_control_gain_;
+  float distance_control_gain_;
+  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg);
 
   // Define Dynamic parameters handler
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr dyn_params_handler_;
@@ -116,6 +129,21 @@ PersonFollower::dynamicParametersCallback(std::vector<rclcpp::Parameter> paramet
           following_distance_ = 0.0;
         }
       }
+
+      if (param_name == "following_angle")
+      {
+        following_angle_ = parameter.as_double();
+      }
+
+      if (param_name == "angle_control_gain")
+      {
+        angle_control_gain_ = parameter.as_double();
+      }
+      if (param_name == "distance_control_gain")
+      {
+        distance_control_gain_ = parameter.as_double();
+      }
+
       /*
       TODO TASK 3 - MILESTONE # 2.1
       Check whether other parameters should be updated and if yes,
