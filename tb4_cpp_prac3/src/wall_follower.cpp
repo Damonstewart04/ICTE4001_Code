@@ -11,6 +11,17 @@
 #define PI 3.14159265358
 using rcl_interfaces::msg::ParameterType;
 
+/*
+90 degree tunings
+
+- following_distance: 0.30
+- wall_side: 1 / -1
+- buffer_zone: 0.50
+- forward_velocity: 0.40
+- angle_control_gain_1 / angle_control_gain_2: 0.7
+- distance_control_gain: 0.20
+*/
+
 class WallFollower : public rclcpp::Node
 {
 public:
