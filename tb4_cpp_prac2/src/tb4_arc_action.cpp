@@ -109,11 +109,20 @@ rclcpp_action::GoalResponse TB4ArcActionServer::handle_goal(
     const rclcpp_action::GoalUUID &uuid,
     std::shared_ptr<const irobot_create_msgs::action::DriveArc::Goal> goal)
 {
+
+  (void)uuid;
+
+  if (goal->radius <= 0.0)
+  {
+    RCLCPP_INFO(this->get_logger(), "Invalid radius provided");
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
   RCLCPP_INFO(this->get_logger(),
               "Received goal request with travel arc of %f m and maximum speed at %f m/s",
               goal->radius,
               goal->max_translation_speed);
-  (void)uuid;
+
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 /* TODO TASKS - MILESTONE #5.1 ~ #5.3
@@ -134,31 +143,20 @@ void TB4ArcActionServer::execute(const std::shared_ptr<rclcpp_action::ServerGoal
   auto &remaining_travel_angle = feedback->remaining_angle_travel;
 
   double omega = 0.0;
-  double linear_v = 0.0;
   double speed = goal->max_translation_speed;
 
   // calc kinematics
-  if (goal->radius == 0.0)
-  {
-    omega = speed;
-    linear_v = 0.0;
-  }
-  else
-  {
-    omega = speed / goal->radius;
-    linear_v = speed;
-  }
+  omega = speed / goal->radius;
 
   // calc proper direction
-  if (goal->angle < 0)
+  if (goal->translate_direction < 0)
   {
     omega = -omega;
   }
-  
-  cmd_vel.linear.set__x(goal->translate_direction * linear_v);
+  cmd_vel.linear.set__x(speed);
   cmd_vel.angular.set__z(omega);
 
-  int count = pub_freq * goal->angle / omega;
+  int count = pub_freq * fabs(goal->angle) / omega;
 
   geometry_msgs::msg::PoseStamped pose_stamped;
 
@@ -173,6 +171,7 @@ void TB4ArcActionServer::execute(const std::shared_ptr<rclcpp_action::ServerGoal
       RCLCPP_INFO(this->get_logger(), "Goal canceled");
       return;
     }
+    // TODO: calculate remaining_arc_distance
     remaining_travel_angle = goal->angle - omega * i / pub_freq;
     // Publish the command velocity
     cmd_vel_publisher_->publish(cmd_vel);
