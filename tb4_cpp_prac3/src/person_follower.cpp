@@ -71,9 +71,9 @@ private:
     Define all private element variables to store parameters.
   */
   double following_distance_;
-  float following_angle_;
-  float angle_control_gain_;
-  float distance_control_gain_;
+  double following_angle_;
+  double angle_control_gain_;
+  double distance_control_gain_;
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg);
 
   // Define Dynamic parameters handler
