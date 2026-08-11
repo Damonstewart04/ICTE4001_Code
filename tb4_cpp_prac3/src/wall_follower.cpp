@@ -119,7 +119,14 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
     */
    
     // Finds the smallest element in the range, and returns an iterator to it
-    auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end());
+    auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
+                                       {
+        bool a_valid = (a >= 0.4);
+        bool b_valid = (b >= 0.4);
+        if (a_valid && b_valid) return a < b;
+        if (a_valid) return true;
+        return false; });
+  // Extracts the actual minimum value from the iterator obtained in the previous step.
     // Get the value of the smallest element
     float min_value = *min_distance;
     // Returns the number of hops from the beginning to the iterator of the smallest element

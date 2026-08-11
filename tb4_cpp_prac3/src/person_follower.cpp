@@ -23,7 +23,7 @@ public:
     */
 
     // Declare parameters
-    this->declare_parameter<double>("following_distance", 1.0);
+    this->declare_parameter<double>("following_distance", 0.5);
     this->declare_parameter<float>("following_angle", 0);
     this->declare_parameter<float>("angle_control_gain", 1.0);
     this->declare_parameter<float>("distance_control_gain", 0.5);
@@ -96,8 +96,8 @@ void PersonFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr 
   // filter out values < 0.2m
   auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
                                        {
-        bool a_valid = (a >= 0.2);
-        bool b_valid = (b >= 0.2);
+        bool a_valid = (a >= 0.4);
+        bool b_valid = (b >= 0.4);
         if (a_valid && b_valid) return a < b;
         if (a_valid) return true;
         return false; });
@@ -107,19 +107,27 @@ void PersonFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr 
   // between the beginning of the vector and the iterator pointing to the minimum value.
   int min_index = std::distance(scan_msg->ranges.begin(), min_distance);
   // Calculate the angle corresponding to the index of the minimum value.
-  // float min_angle = (min_index - 320) * 2 * PI / 640.0;
+  float min_angle = (min_index - 320) * 2 * PI / 640.0;
 
   // calculate angle from lidar frame of reference
-  float l_min_angle = (scan_msg->angle_min) + scan_msg->angle_increment * min_index;
-  float r_min_angle = l_min_angle - PI / 2;
+  // float l_min_angle = (scan_msg->angle_min) + scan_msg->angle_increment * min_index;
+  // float r_min_angle = l_min_angle - PI / 2;
+
 
   geometry_msgs::msg::Twist cmd_vel_msg;
 
   if (min_value < 12)
   {
     // make movement if the object is within 12m
-    cmd_vel_msg.angular.z = angle_control_gain_ * (r_min_angle - following_angle_);
-    cmd_vel_msg.linear.x = distance_control_gain_ * (min_value - following_distance_);
+    cmd_vel_msg.angular.z = angle_control_gain_ * (min_angle - following_angle_);
+    cmd_vel_msg.linear.x = 0.0;
+    double travel_distance = distance_control_gain_ * (min_value - following_distance_);
+    if (travel_distance >= 0.0) {
+      cmd_vel_msg.linear.x = travel_distance;
+    }
+    
+    RCLCPP_INFO(this->get_logger(), "Following object at distance %.2f with angle %.2f", min_value, min_angle);
+
   }
   else
   {
