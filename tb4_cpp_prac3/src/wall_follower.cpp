@@ -168,10 +168,12 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
         {
             if (wall_side_ > 0)
             {
+                // left
                 cmd_vel_msg.angular.z = angle_control_gain_1_ * (min_angle - following_angle_) + angle_control_gain_2_ * (min_value - following_distance_);
             }
             else
             {
+                // right
                 cmd_vel_msg.angular.z = angle_control_gain_1_ * (min_angle - following_angle_) - angle_control_gain_2_ * (min_value - following_distance_);
             }
             cmd_vel_msg.linear.x = forward_velocity_ + distance_control_gain_ * (min_value - following_distance_);
