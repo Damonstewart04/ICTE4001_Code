@@ -112,7 +112,7 @@ rclcpp_action::GoalResponse TB4ArcActionServer::handle_goal(
 
   (void)uuid;
 
-  if (goal->radius == 0.0)
+  if (goal->radius <= 0.0)
   {
     RCLCPP_INFO(this->get_logger(), "Invalid radius provided");
     return rclcpp_action::GoalResponse::REJECT;
@@ -143,22 +143,20 @@ void TB4ArcActionServer::execute(const std::shared_ptr<rclcpp_action::ServerGoal
   auto &remaining_travel_angle = feedback->remaining_angle_travel;
 
   double omega = 0.0;
-  double linear_v = 0.0;
   double speed = goal->max_translation_speed;
 
   // calc kinematics
   omega = speed / goal->radius;
-  linear_v = speed;
 
   // calc proper direction
-  if (goal->angle < 0)
+  if (goal->translate_direction < 0)
   {
     omega = -omega;
   }
-  cmd_vel.linear.set__x(speed * goal->translate_direction);
+  cmd_vel.linear.set__x(speed);
   cmd_vel.angular.set__z(omega);
 
-  int count = pub_freq * goal->angle / omega;
+  int count = pub_freq * fabs(goal->angle) / omega;
 
   geometry_msgs::msg::PoseStamped pose_stamped;
 
