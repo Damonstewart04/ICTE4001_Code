@@ -27,8 +27,7 @@ public:
             Initialise dynamic parameter handler by the rclcpp node method "add_on_set_parameters_callback"
         */
         auto wall_side_desc = rcl_interfaces::msg::ParameterDescriptor{};
-        wall_side_desc.description = "A positive value indicates that the wall will be on the left
-            side of the robot, otherwise on the right ";
+        wall_side_desc.description = "A positive value indicates that the wall will be on the left side of the robot, otherwise on the right ";
         auto buffer_zone_desc = rcl_interfaces::msg::ParameterDescriptor{};
         buffer_zone_desc.description = "A positive value used to determine whether the trackingcontrol is on or off ";
         // Declare parameters
@@ -49,7 +48,7 @@ public:
         this->get_parameter("distance_control_gain", distance_control_gain_);
         // Print parameter values
         RCLCPP_INFO(this->get_logger(), "following_distance: %.2f", following_distance_);
-        RCLCPP_INFO(this->get_logger(), "wall_side: %d", wall_side_);
+        RCLCPP_INFO(this->get_logger(), "wall_side: %ld", wall_side_);
         RCLCPP_INFO(this->get_logger(), "buffer_zone: %.2f", buffer_zone_);
         RCLCPP_INFO(this->get_logger(), "forward_velocity: %.2f", forward_velocity_);
         RCLCPP_INFO(this->get_logger(), "angle_control_gain_1: %.2f", angle_control_gain_1_);
@@ -103,7 +102,7 @@ private:
 void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
 {
     std::lock_guard<std::recursive_mutex> cfl(mutex_);
-    /*TODO TASKS
+    /* TASKS
         MILESTONE # 6.1. Process the received scan_msg to get the location of the closest object in robot's environment.
         NOTE: the four pillars of will be visible from the Lidar sensor, you have to remove the distance
         measurements of these four pillars by ignoring any measurement less than 0.2 meter.
@@ -174,7 +173,7 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
    else
    {
        // No valid movement available, move forward at a constant speed
-       RCLPP_INFO(this->get_logger(), "No Object is Detected");
+       RCLCPP_INFO(this->get_logger(), "No Object is Detected");
        cmd_vel_msg.linear.x = 0.2;
    }
    
@@ -187,10 +186,67 @@ WallFollower::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameter
 {
     std::lock_guard<std::recursive_mutex> cfl(mutex_);
     rcl_interfaces::msg::SetParametersResult result;
-    /*TODO TASK - MILESTONE #5.1
+    /*TASK - MILESTONE #5.1
       Check whether update of a parameter in the node is requested, if yes and save the updated
       parameter value.
     */
+    for (auto parameter : parameters)
+    {
+        const auto &param_type = parameter.get_type();
+        const auto &param_name = parameter.get_name();
+        if (param_type == ParameterType::PARAMETER_DOUBLE)
+        {
+            if (param_name == "following_distance")
+            {
+                following_distance_ = parameter.as_double();
+                if (following_distance_ < 0.0)
+                {
+                    RCLCPP_WARN(this->get_logger(), "You've set following distance to a negative value, this isn't allowed so will be set to 0.0");
+                    following_distance_ = 0.0;
+                }
+            }
+
+            if (param_name == "following_angle")
+            {
+                following_angle_ = parameter.as_double();
+            }
+
+            if (param_name == "buffer_zone")
+            {
+                buffer_zone_ = parameter.as_double();
+            }
+
+            if (param_name == "forward_velocity")
+            {
+                forward_velocity_ = parameter.as_double();
+            }
+
+            if (param_name == "angle_control_gain_1")
+            {
+                angle_control_gain_1_ = parameter.as_double();
+            }
+
+            if (param_name == "angle_control_gain_2")
+            {
+                angle_control_gain_2_ = parameter.as_double();
+            }
+
+            if (param_name == "distance_control_gain")
+            {
+                distance_control_gain_ = parameter.as_double();
+            }
+        }
+
+        if (param_type == ParameterType::PARAMETER_INTEGER)
+        {
+            if (param_name == "wall_side")
+            {
+                wall_side_ = parameter.as_int();
+            }
+        }
+    }
+    result.successful = true;
+    return result;
 }
 
 int main(int argc, char **argv)
