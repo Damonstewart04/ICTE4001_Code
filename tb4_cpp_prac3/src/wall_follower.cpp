@@ -65,7 +65,7 @@ public:
         RCLCPP_INFO(this->get_logger(), "angle_control_gain_1: %.2f", angle_control_gain_1_);
         RCLCPP_INFO(this->get_logger(), "angle_control_gain_2: %.2f", angle_control_gain_2_);
         RCLCPP_INFO(this->get_logger(), "distance_control_gain: %.2f", distance_control_gain_);
-        
+
         if (wall_side_ > 0)
             following_angle_ = PI / 2;
         else
@@ -80,6 +80,7 @@ public:
             rclcpp::SensorDataQoS(),
             std::bind(&WallFollower::scan_callback, this, _1));
     }
+
 private:
     std::recursive_mutex mutex_;
     // Define a command velocity publisher
@@ -88,7 +89,6 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
     // Laser scan topic message pointer
     sensor_msgs::msg::LaserScan::SharedPtr scan_;
-    
 
     /* TASK - MILESTONE #4.2
         define dynamic parameter call back handle.
@@ -128,22 +128,22 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
             3.2 Next, the robot enter the wall follow mode with the control lawy in in Algorithm 1
             3.3 The robot should deal with corner cases by only using reactive control with properly tuned control gains.
     */
-   
+
     // Finds the smallest element in the range, and returns an iterator to it
     auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
-                                       {
+                                         {
         bool a_valid = (a >= 0.4);
         bool b_valid = (b >= 0.4);
         if (a_valid && b_valid) return a < b;
         if (a_valid) return true;
         return false; });
-  // Extracts the actual minimum value from the iterator obtained in the previous step.
+    // Extracts the actual minimum value from the iterator obtained in the previous step.
     // Get the value of the smallest element
     float min_value = *min_distance;
     // Returns the number of hops from the beginning to the iterator of the smallest element
     int min_index = std::distance(scan_msg->ranges.begin(), min_distance);
     // Use the index to calculate the angle where the smallest range is measured
-    float min_angle = (min_index - 320)*2*PI/640.0;
+    float min_angle = (min_index - 320) * 2 * PI / 640.0;
 
     geometry_msgs::msg::Twist cmd_vel_msg;
 
@@ -152,14 +152,14 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
         0.164 to 12.
     If min_value<12, the lidar sensor has a valid measurement
     */
-   if(min_value < 12)
-   {
+    if (min_value < 12)
+    {
         // The robot is moving towards the nearest wall at speed of forward_velocity_
         if (min_value > (following_distance_ + buffer_zone_))
         {
-            if (abs(min_angle) > PI/4.0)
+            if (abs(min_angle) > PI / 4.0)
             {
-                if (min_angle > PI/4.0)
+                if (min_angle > PI / 4.0)
                 {
                     cmd_vel_msg.angular.z = 1.0;
                 }
@@ -177,27 +177,43 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
         // drive along the wall at a fixed distance
         else
         {
+            float theta = min_angle - following_angle_;
+
             if (wall_side_ > 0)
             {
                 // left
-                cmd_vel_msg.angular.z = angle_control_gain_1_ * (min_angle - following_angle_) + angle_control_gain_2_ * (min_value - following_distance_);
+                if (fabs(theta) > PI / 10)
+                {
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta) + angle_control_gain_2_ * (min_value - following_distance_) * (sin(theta) / theta);
+                }
+                else
+                {
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta) + angle_control_gain_2_ * (min_value - following_distance_);
+                }
             }
             else
             {
                 // right
-                cmd_vel_msg.angular.z = angle_control_gain_1_ * (min_angle - following_angle_) - angle_control_gain_2_ * (min_value - following_distance_);
+                if (fabs(theta) > PI / 10)
+                {
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * -(theta) - angle_control_gain_2_ * (min_value - following_distance_) * (sin(-theta) / -theta);
+                }
+                else
+                {
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * -(theta) - angle_control_gain_2_ * (min_value - following_distance_);
+                }
             }
             cmd_vel_msg.linear.x = forward_velocity_ + distance_control_gain_ * (min_value - following_distance_);
         }
-   }
-   else
-   {
-       // No valid movement available, move forward at a constant speed
-       RCLCPP_INFO(this->get_logger(), "No Object is Detected");
-       cmd_vel_msg.linear.x = 0.2;
-   }
-   
-   // Publish the command velocity message
+    }
+    else
+    {
+        // No valid movement available, move forward at a constant speed
+        RCLCPP_INFO(this->get_logger(), "No Object is Detected");
+        cmd_vel_msg.linear.x = 0.2;
+    }
+
+    // Publish the command velocity message
     cmd_vel_publisher_->publish(cmd_vel_msg);
 }
 
@@ -228,17 +244,37 @@ WallFollower::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameter
 
             if (param_name == "following_angle")
             {
+
                 following_angle_ = parameter.as_double();
+                if (following_angle_ < 0.0)
+                {
+                    RCLCPP_WARN(this->get_logger(), "You've set following_angle_ to be negative,"
+                                                    " this isn't allowed, so the alpha1 will be set to be zero.");
+                    following_angle_ = 0.0;
+                }
             }
 
             if (param_name == "buffer_zone")
             {
                 buffer_zone_ = parameter.as_double();
+                if (buffer_zone_ < 0.0)
+                {
+                    RCLCPP_WARN(this->get_logger(), "You've set buffer_zone_ to be negative,"
+                                                    " this isn't allowed, so the alpha1 will be set to be zero.");
+                    buffer_zone_ = 0.0;
+                }
             }
 
             if (param_name == "forward_velocity")
             {
                 forward_velocity_ = parameter.as_double();
+
+                if (forward_velocity_ < 0.0)
+                {
+                    RCLCPP_WARN(this->get_logger(), "You've set forward_velocity_ to be negative,"
+                                                    " this isn't allowed, so the alpha1 will be set to be zero.");
+                    forward_velocity_ = 0.0;
+                }
             }
 
             if (param_name == "angle_control_gain_1")
