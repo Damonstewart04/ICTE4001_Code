@@ -178,6 +178,7 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
         else
         {
             float theta = min_angle - following_angle_;
+            theta = std::atan2(std::sin(theta), std::cos(theta));
 
             if (wall_side_ > 0)
             {
@@ -196,11 +197,11 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
                 // right
                 if (fabs(theta) > PI / 10)
                 {
-                    cmd_vel_msg.angular.z = angle_control_gain_1_ * -(theta) - angle_control_gain_2_ * (min_value - following_distance_) * (sin(-theta) / -theta);
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta) - angle_control_gain_2_ * (min_value - following_distance_) * (sin(theta) / theta);
                 }
                 else
                 {
-                    cmd_vel_msg.angular.z = angle_control_gain_1_ * -(theta) - angle_control_gain_2_ * (min_value - following_distance_);
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta) - angle_control_gain_2_ * (min_value - following_distance_);
                 }
             }
             cmd_vel_msg.linear.x = forward_velocity_ + distance_control_gain_ * (min_value - following_distance_);
