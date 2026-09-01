@@ -129,28 +129,19 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
             3.3 The robot should deal with corner cases by only using reactive control with properly tuned control gains.
     */
 
-    int center = scan_msg->ranges.size() / 2;
-    int start = (wall_side_ > 0) ? center : 0;
-    int end = (wall_side_ > 0) ? scan_msg->ranges.size() : center;
-
     // Finds the smallest element in the range, and returns an iterator to it
-    auto min_distance = std::min_element(
-        scan_msg->ranges.begin() + start, scan_msg->ranges.begin() + end,
-        [](float a, float b)
-        {
-            bool a_valid = (a >= 0.2);
-            bool b_valid = (b >= 0.2);
-            if (a_valid && b_valid)
-                return a < b;
-            if (a_valid)
-                return true;
-            return false;
-        });
+    auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
+                                         {
+        bool a_valid = (a >= 0.4);
+        bool b_valid = (b >= 0.4);
+        if (a_valid && b_valid) return a < b;
+        if (a_valid) return true;
+        return false; });
     // Extracts the actual minimum value from the iterator obtained in the previous step.
     // Get the value of the smallest element
     float min_value = *min_distance;
     // Returns the number of hops from the beginning to the iterator of the smallest element
-    int min_index = start + std::distance(scan_msg->ranges.begin() + start, min_distance);
+    int min_index = std::distance(scan_msg->ranges.begin(), min_distance);
     // Use the index to calculate the angle where the smallest range is measured
     float min_angle = (min_index - 320) * 2 * PI / 640.0;
 
@@ -190,7 +181,6 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
         else
         {
             float theta = min_angle - following_angle_;
-            theta = std::atan2(std::sin(theta), std::cos(theta));
 
             if (wall_side_ > 0)
             {
