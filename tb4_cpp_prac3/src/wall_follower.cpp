@@ -147,6 +147,9 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
 
     geometry_msgs::msg::Twist cmd_vel_msg;
 
+    // Print the wall side, minimum angle, and minimum value to the console
+    RCLCPP_INFO(this->get_logger(), "wall_side=%ld min_angle=%.2f theta_branch min_value=%.2f", wall_side_, min_angle, min_value);
+
     /*
     The magic number 12 is from the simulation setup, i.e., the range of the lidar sensor is from
         0.164 to 12.
@@ -197,11 +200,11 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
                 // right
                 if (fabs(theta) > PI / 10)
                 {
-                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta) - angle_control_gain_2_ * (min_value - following_distance_) * (sin(theta) / theta);
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta)-angle_control_gain_2_ * (min_value - following_distance_) * (sin(theta) / theta);
                 }
                 else
                 {
-                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta) - angle_control_gain_2_ * (min_value - following_distance_);
+                    cmd_vel_msg.angular.z = angle_control_gain_1_ * (theta)-angle_control_gain_2_ * (min_value - following_distance_);
                 }
             }
             cmd_vel_msg.linear.x = forward_velocity_ + distance_control_gain_ * (min_value - following_distance_);
