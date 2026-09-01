@@ -96,8 +96,8 @@ void PersonFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr 
   // filter out values < 0.2m
   auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
                                        {
-        bool a_valid = (a >= 0.4);
-        bool b_valid = (b >= 0.4);
+        bool a_valid = (a >= 0.2);
+        bool b_valid = (b >= 0.2);
         if (a_valid && b_valid) return a < b;
         if (a_valid) return true;
         return false; });

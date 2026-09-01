@@ -132,8 +132,8 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
     // Finds the smallest element in the range, and returns an iterator to it
     auto min_distance = std::min_element(scan_msg->ranges.begin(), scan_msg->ranges.end(), [](float a, float b)
                                          {
-        bool a_valid = (a >= 0.4);
-        bool b_valid = (b >= 0.4);
+        bool a_valid = (a >= 0.2);
+        bool b_valid = (b >= 0.2);
         if (a_valid && b_valid) return a < b;
         if (a_valid) return true;
         return false; });
@@ -143,9 +143,10 @@ void WallFollower::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr sc
     // Returns the number of hops from the beginning to the iterator of the smallest element
     int min_index = std::distance(scan_msg->ranges.begin(), min_distance);
     // Use the index to calculate the angle where the smallest range is measured
-    float angle_L = scan_msg->angle_min + min_index * scan_msg->angle_increment;
-    float min_angle = angle_L - PI / 2.0;
+    float min_angle = (scan_msg->angle_min + min_index * scan_msg->angle_increment) + PI / 2;
     min_angle = std::atan2(std::sin(min_angle), std::cos(min_angle));
+    
+
     geometry_msgs::msg::Twist cmd_vel_msg;
 
     // Print the wall side, minimum angle, and minimum value to the console
