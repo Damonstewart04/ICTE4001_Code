@@ -107,7 +107,8 @@ namespace iar_amcl
                     if (MAP_VALID(self->map_, m_x, m_y))
                     {
                         // valid point
-                        dist = self->map_->cells[i].occ_dist;
+                        int map_index = MAP_INDEX(self->map_, m_x, m_y);
+                        dist = self->map_->cells[map_index].occ_dist;
                     }
                     else
                     {
