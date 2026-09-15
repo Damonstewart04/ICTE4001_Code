@@ -1813,7 +1813,7 @@ namespace iar_amcl
       /* TODO TASK - MILESTONE # 5
         Allocate weights to new particles, and calculate total weights
       */
-      sample_in_new_set->weight = 1.0 / pf->max_samples;
+      sample_in_new_set->weight = 1.0;
       total_weight += sample_in_new_set->weight;
       iar_amcl::pf_kdtree_insert(new_particle_set->kdtree, sample_in_new_set->pose, sample_in_new_set->weight);
       new_particle_set->sample_count++;
