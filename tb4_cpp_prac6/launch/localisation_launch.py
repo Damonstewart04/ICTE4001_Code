@@ -56,7 +56,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         "map",
-        default_value=os.path.join(iar_amcl_dir, "map", "office_ICTE4001_sim.yaml"),
+        default_value=os.path.join(iar_amcl_dir, "map", "lab_ICTE4001.yaml"),
         description="Full path to map yaml file to load",
     )
 
