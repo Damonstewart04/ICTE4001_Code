@@ -1801,19 +1801,22 @@ namespace iar_amcl
         /* TODO TASK - MILESTONE # 4.2
           Generate samples based on weight
         */
-        double weight = sample_in_old_set->weight;
-        sample_in_new_set->pose.v[0] = sample_in_old_set->pose.v[0] * weight;
-        sample_in_new_set->pose.v[1] = sample_in_old_set->pose.v[1] * weight;
-        sample_in_new_set->pose.v[2] = sample_in_old_set->pose.v[2] * weight;
+        int idx = 0;
+        double r = drand48() * cd_old_set[old_particle_set->sample_count];
+        while (idx < old_particle_set->sample_count && cd_old_set[idx + 1] < r)
+        {
+          idx++;
+        }
+        sample_in_old_set = old_particle_set->samples + idx;
+        sample_in_new_set->pose = sample_in_old_set->pose;
       }
       /* TODO TASK - MILESTONE # 5
         Allocate weights to new particles, and calculate total weights
       */
-
+      sample_in_new_set->weight = 1.0 / pf->max_samples;
+      total_weight += sample_in_new_set->weight;
       iar_amcl::pf_kdtree_insert(new_particle_set->kdtree, sample_in_new_set->pose, sample_in_new_set->weight);
       new_particle_set->sample_count++;
-      sample_in_new_set->weight = 1.0 / pf_->max_samples;
-      total_weight += sample_in_new_set->weight;
 
       /* TODO TASK - MILESTONE # 6
         Compute the value of "M", i.e., the number of samples that the KL distance between particles and real
@@ -1828,7 +1831,7 @@ namespace iar_amcl
       }
       else
       {
-        M = std::max((double)pf->min_samples, (k - 1) / (2 * pf_err_) * std::pow(1 - 2 / (9 * (k - 1)) + (std::sqrt(2 / (9 * (k - 1))) * pf_z_), 3));
+        M = std::max((double)pf->min_samples, (k - 1.0) / (2.0 * pf_err_) * std::pow(1.0 - 2.0 / (9.0 * (k - 1.0)) + (std::sqrt(2.0 / (9.0 * (k - 1.0))) * pf_z_), 3));
       }
 
       /* TODO TASK - MILESTONE # 7
