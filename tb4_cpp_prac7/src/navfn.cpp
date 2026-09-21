@@ -6,7 +6,7 @@ namespace iar_astar_planner
 {
     NavFn::NavFn(int nx, int ny)
     {
-          // create cell arrays
+        // create cell arrays
         RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "[NavFn] Constructor");
         costarr_ = NULL;
         potarr_ = NULL;
@@ -19,36 +19,42 @@ namespace iar_astar_planner
 
         potentThreshInc_ = 2 * COST_NEUTRAL;
 
-
         npathbuf_ = npath_ = 0;
         pathx_ = pathy_ = NULL;
-        
     }
     NavFn::~NavFn()
     {
-        if (costarr_) {
+        if (costarr_)
+        {
             delete[] costarr_;
         }
-        if (potarr_) {
+        if (potarr_)
+        {
             delete[] potarr_;
         }
-        if (curPotentArr_){
+        if (curPotentArr_)
+        {
             delete[] curPotentArr_;
         }
-        if(nextPotentArr_){
+        if (nextPotentArr_)
+        {
             delete[] nextPotentArr_;
         }
-        if(overflowPotentArr_){
+        if (overflowPotentArr_)
+        {
             delete[] overflowPotentArr_;
         }
-        if (pending_) {
+        if (pending_)
+        {
             delete[] pending_;
         }
 
-        if (pathx_) {
+        if (pathx_)
+        {
             delete[] pathx_;
         }
-        if (pathy_) {
+        if (pathy_)
+        {
             delete[] pathy_;
         }
     }
@@ -59,47 +65,48 @@ namespace iar_astar_planner
         ny_ = ny;
         ns_ = nx * ny;
 
-        
-
-        if (costarr_) {
+        if (costarr_)
+        {
             delete[] costarr_;
         }
-        if (potarr_) {
+        if (potarr_)
+        {
             delete[] potarr_;
         }
-        if (pending_) {
+        if (pending_)
+        {
             delete[] pending_;
         }
 
-        costarr_ = new COSTTYPE[ns_];  // cost array, 2d config space
+        costarr_ = new COSTTYPE[ns_]; // cost array, 2d config space
         memset(costarr_, 0, ns_ * sizeof(COSTTYPE));
-        potarr_ = new float[ns_];  // navigation potential array
+        potarr_ = new float[ns_]; // navigation potential array
         pending_ = new bool[ns_];
         memset(pending_, 0, ns_ * sizeof(bool));
     }
 
-
-    void NavFn::setStart(int * start)
+    void NavFn::setStart(int *start)
     {
         start_[0] = start[0];
         start_[1] = start[1];
     }
-    void NavFn::setGoal(int * goal)
+    void NavFn::setGoal(int *goal)
     {
         goal_[0] = goal[0];
-        goal_[1] = goal[1];   
+        goal_[1] = goal[1];
     }
 
-
     void
-    NavFn::setCostmap(const COSTTYPE * cmap, bool allow_unknown)
+    NavFn::setCostmap(const COSTTYPE *cmap, bool allow_unknown)
     {
-        COSTTYPE * cm = costarr_;
-        for (int i = 0; i < ny_; i++) {
+        COSTTYPE *cm = costarr_;
+        for (int i = 0; i < ny_; i++)
+        {
             int k = i * nx_;
-            for (int j = 0; j < nx_; j++, k++, cmap++, cm++) {
+            for (int j = 0; j < nx_; j++, k++, cmap++, cm++)
+            {
                 // This transforms the incoming cost values from NAV2::COSTMAP::2D
-                // where in ROS  
+                // where in ROS
                 //      NO_INFORMATION = 255;
                 //      LETHAL_OBSTACLE = 254;
                 //      INSCRIBED_INFLATED_OBSTACLE = 253;
@@ -112,13 +119,17 @@ namespace iar_astar_planner
                 // values(0 to 252) -> values from COST_NEUTRAL (50) to COST_OBS_ROS (253).
                 *cm = COST_OBS;
                 int v = *cmap;
-                if (v < COST_OBS_ROS) {
+                if (v < COST_OBS_ROS)
+                {
                     v = COST_NEUTRAL + COST_FACTOR * v;
-                    if (v >= COST_OBS) {
+                    if (v >= COST_OBS)
+                    {
                         v = COST_OBS - 1;
                     }
                     *cm = v;
-                } else if (v == COST_UNKNOWN_ROS && allow_unknown) {
+                }
+                else if (v == COST_UNKNOWN_ROS && allow_unknown)
+                {
                     v = COST_OBS - 1;
                     *cm = v;
                 }
@@ -129,26 +140,31 @@ namespace iar_astar_planner
     bool NavFn::setNavFn()
     {
         // reset values in propagation arrays
-        for (int i = 0; i < ns_; i++) {
+        for (int i = 0; i < ns_; i++)
+        {
             potarr_[i] = POT_HIGHEST;
         }
 
         // outer bounds of cost array
-        COSTTYPE * pc;
+        COSTTYPE *pc;
         pc = costarr_;
-        for (int i = 0; i < nx_; i++) {
+        for (int i = 0; i < nx_; i++)
+        {
             *pc++ = COST_OBS;
         }
         pc = costarr_ + (ny_ - 1) * nx_;
-        for (int i = 0; i < nx_; i++) {
+        for (int i = 0; i < nx_; i++)
+        {
             *pc++ = COST_OBS;
         }
         pc = costarr_;
-        for (int i = 0; i < ny_; i++, pc += nx_) {
+        for (int i = 0; i < ny_; i++, pc += nx_)
+        {
             *pc = COST_OBS;
         }
         pc = costarr_ + nx_ - 1;
-        for (int i = 0; i < ny_; i++, pc += nx_) {
+        for (int i = 0; i < ny_; i++, pc += nx_)
+        {
             *pc = COST_OBS;
         }
 
@@ -159,38 +175,40 @@ namespace iar_astar_planner
         n_overflowPotentArr_ = 0;
         memset(pending_, 0, ns_ * sizeof(bool));
 
-
         // set start
         int k = start_[0] + start_[1] * nx_;
         potarr_[k] = 0;
-        push_cur(k + 1); // right
-        push_cur(k - 1); // left
+        push_cur(k + 1);   // right
+        push_cur(k - 1);   // left
         push_cur(k - nx_); // top
         push_cur(k + nx_); // bottom
 
         /* TODO TASK - MILESTONE # 1.1
             Check whether top left, top right, bottom left, and bottom right cells
-            (not just the right, left, top and bottom)  should be pushed to the 
+            (not just the right, left, top and bottom)  should be pushed to the
             buffer "curPotentArr_"
         */
-
+        push_cur(k - nx_ - 1); // top left
+        push_cur(k - nx_ + 1); // top right
+        push_cur(k + nx_ - 1); // bottom left
+        push_cur(k + nx_ + 1); // bottom right
 
         if (n_curPotentArr_ <= 0)
         {
             RCLCPP_WARN(
                 rclcpp::get_logger("rclcpp"),
-                "[NavFn] Planning Failed, as Starting cell sorrunded by Obstacles"
-            );
+                "[NavFn] Planning Failed, as Starting cell sorrunded by Obstacles");
             return false;
         }
-            
 
         // find # of obstacle cells
         pc = costarr_;
         int ntot = 0;
-        for (int i = 0; i < ns_; i++, pc++) {
-            if (*pc >= COST_OBS) {
-            ntot++;  // number of cells that are obstacles
+        for (int i = 0; i < ns_; i++, pc++)
+        {
+            if (*pc >= COST_OBS)
+            {
+                ntot++; // number of cells that are obstacles
             }
         }
         nobs_ = ntot;
@@ -199,68 +217,89 @@ namespace iar_astar_planner
 
     bool NavFn::propAstar(int cycles)
     {
-        int max_blk_size = 0;  // max priority block size
-        int n_cells = 0;  // number of cells put into priority blocks
-        int cycle = 0;  // which cycle we're on
-
+        int max_blk_size = 0; // max priority block size
+        int n_cells = 0;      // number of cells put into priority blocks
+        int cycle = 0;        // which cycle we're on
 
         /* TODO TASK - MILESTONE # 2.1
             Compute the heuristic distance from start cell to goal cell
             and add the heuristic distance to the potential threshold
         */
+        int dx = goal_[0] - start_[0];
+        int dy = goal_[1] - start_[1];
+        float h = std::sqrt(dx * dx + dy * dy);
 
-
-        
+        int goalCell = goal_[1] * nx_ + goal_[0];
         bool propSuccess = false;
-        for(; cycle < cycles; cycle++)
+        for (; cycle < cycles; cycle++)
         {
-            /* TODO TASK - MILESTONE # 2.2 
+            /* TODO TASK - MILESTONE # 2.2
                 Check whether the number of valid cell indexes in buffer ``curPotentArr_" and ``nextPotentArr_"
                 is equal to zero, if yes, we break the loop
             */
-
+            if (n_curPotentArr_ == 0 && n_nextPotentArr_ == 0)
+            {
+                break;
+            }
 
             /* TODO TASK - MILESTONE # 2.3
                 Set the values of cells in ``pending_" with indexes stored in ``curPotentArr_" to false
             */
+            int i = n_curPotentArr_;
+            int *pb = curPotentArr_;
+            while (i-- > 0)
+            {
+                pending_[*(pb++)] = false;
+            }
 
             pb = curPotentArr_;
             i = n_curPotentArr_;
-            while(i-- >0)
+            while (i-- > 0)
             {
                 updateCell(*pb++);
             }
 
-            //stats
+            // stats
             n_cells += n_curPotentArr_;
-            if (n_curPotentArr_>max_blk_size)
+            if (n_curPotentArr_ > max_blk_size)
                 max_blk_size = n_curPotentArr_;
 
             n_curPotentArr_ = n_nextPotentArr_;
             n_nextPotentArr_ = 0;
-            pb =  curPotentArr_;
+            pb = curPotentArr_;
             curPotentArr_ = nextPotentArr_;
             nextPotentArr_ = pb;
 
             /* TODO TASK - MILESTONE # 2.4
                 Check whether after swapping the contents of buffers ``curPotentArr_" and ``nextPotentArr_"
-                there are indexes of cells stored in the ``curPotentArr_". 
-                If does not exist any, swap the contents of buffers `curPotentArr_" and ``overflowPotentArr_", 
+                there are indexes of cells stored in the ``curPotentArr_".
+                If does not exist any, swap the contents of buffers `curPotentArr_" and ``overflowPotentArr_",
                 and increment the potential threshhold.
             */
-
+            if (n_curPotentArr_ == 0)
+            {
+                potentThresh_ += potentThreshInc_;
+                n_curPotentArr_ = n_overflowPotentArr_;
+                n_overflowPotentArr_ = 0;
+                pb = curPotentArr_;
+                curPotentArr_ = overflowPotentArr_;
+                overflowPotentArr_ = pb;
+            }
 
             /* TODO TASK - MILESTONE # 2.5
-                Check whether the propogation hit the goal pose. 
+                Check whether the propogation hit the goal pose.
                 If yes, stop the propogation process and set succes flag to ''true"
             */
-  
-                
+            if (potarr_[goalCell] < POT_HIGHEST)
+            {
+                propSuccess = true;
+                break;
+            }
         }
         RCLCPP_DEBUG(
             rclcpp::get_logger("rclcpp"),
             "[NavFn] Used %d cycles, %d cells visited (%d%%), priority buf max %d\n",
-            cycle, n_cells, (int)((n_cells * 100.0) / (ns_ - nobs_)), max_blk_size);    
+            cycle, n_cells, (int)((n_cells * 100.0) / (ns_ - nobs_)), max_blk_size);
         return propSuccess;
     }
 
@@ -275,124 +314,173 @@ namespace iar_astar_planner
 
             /* TODO TASK - MILESTONE # 3.1
                 Compute the potentials moving from the left, right, top, and bottom cells
-                and save them to variables l, r, t, and b, respectively. 
+                and save them to variables l, r, t, and b, respectively.
                 Example, if you move from left cell to the current cell
-                l = potarr_[n - 1] + costarr_[n] 
-                Please note if you copy code above, an error will appear as it serve for 
-                the purpose of explanation. 
-            */           
-  
+                l = potarr_[n - 1] + costarr_[n]
+                Please note if you copy code above, an error will appear as it serve for
+                the purpose of explanation.
+            */
+            l = potarr_[n - 1] + costarr_[n];
+            r = potarr_[n + 1] + costarr_[n];
+            t = potarr_[n - nx_] + costarr_[n];
+            b = potarr_[n - nx_] + costarr_[n];
 
             /* TODO TASK - MILESTONE # 3.2
                 Compute the potentials moving from the top-left, top-right, bottom-left, and
                 bottom-right cells, and save them to variables tl, tr, bl, and br, respectively.
                 The formula used is
-                tl = potarr_[n - nx_ - 1] + sqrt(2)*costarr_[n] 
+                tl = potarr_[n - nx_ - 1] + sqrt(2)*costarr_[n]
                 Please note here, the coefficient sqrt(2) is used because the traversal distance is
-                sqrt(2) grid unit. 
+                sqrt(2) grid unit.
             */
-
+            tl = potarr_[n - nx_ - 1] + SQUAREROOT2 * costarr_[n];
+            tr = potarr_[n - nx_ + 1] + SQUAREROOT2 * costarr_[n];
+            bl = potarr_[n + nx_ - 1] + SQUAREROOT2 * costarr_[n];
+            br = potarr_[n + nx_ + 1] + SQUAREROOT2 * costarr_[n];
 
             /* TODO TASK - MILESTONE # 3.3
-                Find the minimum value among l, r, t, b, tl, tr, bl, and br, 
-                and set the minimum value as the newly computed potential for cell 
-                with index n. 
-                The function std::min from the ``algorithm" library can be used. 
+                Find the minimum value among l, r, t, b, tl, tr, bl, and br,
+                and set the minimum value as the newly computed potential for cell
+                with index n.
+                The function std::min from the ``algorithm" library can be used.
                 https://en.cppreference.com/w/cpp/algorithm/min
             */
-            
-            
+            pot = std::min({l, r, t, b, tl, tr, bl, br});
 
-            if (pot < potarr_[n]) /* only update the newly computed pot if it is 
-                less than the existing saved potential estimate */ 
+            if (pot < potarr_[n]) /* only update the newly computed pot if it is
+                less than the existing saved potential estimate */
             {
                 /* TODO TASK - MILESTONE # 3.4
                     Update the potential value of cell with index n
                 */
-
+                potarr_[n] = pot;
                 /* TODO TASK - MILESTONE # 3.5
                     Compute the heuristic distance from current cell to the goal cell,
                     and add the distance cost to the pot
                 */
-  
+                int cx = n % nx_;
+                int cy = n / nx_;
+                int dx = goal_[0] - cx;
+                int dy = goal_[1] - cy;
+                float h = std::sqrt(dx * dx + dy * dy);
+                pot = potarr_[n] + h;
 
                 if (pot < potentThresh_)
                 {
                     /* TODO TASK - MILESTONE # 3.6
-                        Check whether current cell's left, right, top, and bottom cells need to update 
-                        their potentials. 
-                        If the existing saved potential of the neighbouring cell is larger than the 
-                        sum of current cell potential,  heuristic distance from current cell to goal cell, 
+                        Check whether current cell's left, right, top, and bottom cells need to update
+                        their potentials.
+                        If the existing saved potential of the neighbouring cell is larger than the
+                        sum of current cell potential,  heuristic distance from current cell to goal cell,
                         and traversal cost to the neighbouring cell, we need to update the potential of the
                         neighbouring cell. Hence, you have to push the cell to the buffer ``nextPotentArr_".
                         An example, for the left cell of current cell, the condition to be checked is
                             potarr_[n - 1] > pot +  costarr_[n - 1]
                     */
+                    if (potarr_[n - 1] > pot + costarr_[n - 1])
+                        push_next(n - 1); // left
+                    if (potarr_[n + 1] > pot + costarr_[n + 1])
+                        push_next(n + 1); // right
+                    if (potarr_[n - nx_] > pot + costarr_[n - nx_])
+                        push_next(n - nx_); // top
+                    if (potarr_[n + nx_] > pot + costarr_[n + nx_])
+                        push_next(n + nx_); // bottom
 
                     /* TODO TASK - MILESTONE # 3.7
                         Check whether current cell's top-left, top-right, bottom-left, and bottom-right
-                        cells need to update their potentials. 
-                        If the existing saved potential of the neighbouring cell is larger than the 
-                        sum of current cell potential,  heuristic distance from current cell to goal cell, 
+                        cells need to update their potentials.
+                        If the existing saved potential of the neighbouring cell is larger than the
+                        sum of current cell potential,  heuristic distance from current cell to goal cell,
                         and traversal cost to the neighbouring cell, we need to update the potential of the
                         neighbouring cell. Hence, you have to push the cell to the buffer ``nextPotentArr_".
                         An example, for the top-left cell of current cell, the condition to be checked is
                             potarr_[n - nx_ - 1] > pot +  sqrt(2) * costarr_[n - nx_ - 1]
                         Please note the difference in the formula to that of above task.
                     */
-
-                } else {
+                    if (potarr_[n - nx_ - 1] > pot + SQUAREROOT2 * costarr_[n - nx_ - 1])
+                        push_next(n - nx_ - 1); // top left
+                    if (potarr_[n - nx_ + 1] > pot + SQUAREROOT2 * costarr_[n - nx_ + 1])
+                        push_next(n - nx_ + 1); // top right
+                    if (potarr_[n + nx_ - 1] > pot + SQUAREROOT2 * costarr_[n + nx_ - 1])
+                        push_next(n + nx_ - 1); // bottom left
+                    if (potarr_[n + nx_ + 1] > pot + SQUAREROOT2 * costarr_[n + nx_ + 1])
+                        push_next(n + nx_ + 1); // bottom right
+                }
+                else
+                {
                     /* TODO TASK - MILESTONE # 3.8
-                        Check whether current cell's left, right, top, and bottom cells need to update 
-                        their potentials. 
-                        If the existing saved potential of the neighbouring cell is larger than the 
-                        sum of current cell potential,  heuristic distance from current cell to goal cell, 
+                        Check whether current cell's left, right, top, and bottom cells need to update
+                        their potentials.
+                        If the existing saved potential of the neighbouring cell is larger than the
+                        sum of current cell potential,  heuristic distance from current cell to goal cell,
                         and traversal cost to the neighbouring cell, we need to update the potential of the
                         neighbouring cell. Hence, you have to push the cell to the buffer ``overflowPotentArr_".
                         An example, for the left cell of current cell, the condition to be checked is
                             potarr_[n - 1] > pot +  costarr_[n - 1]
                     */
+                    if (potarr_[n - 1] > pot + costarr_[n - 1])
+                        push_over(n - 1); // left
+                    if (potarr_[n + 1] > pot + costarr_[n + 1])
+                        push_over(n + 1); // right
+                    if (potarr_[n - nx_] > pot + costarr_[n - nx_])
+                        push_over(n - nx_); // top
+                    if (potarr_[n + nx_] > pot + costarr_[n + nx_])
+                        push_over(n + nx_); // bottom
 
                     /* TODO TASK - MILESTONE # 3.9
                         Check whether current cell's top-left, top-right, bottom-left, and bottom-right
-                        cells need to update their potentials. 
-                        If the existing saved potential of the neighbouring cell is larger than the 
-                        sum of current cell potential,  heuristic distance from current cell to goal cell, 
+                        cells need to update their potentials.
+                        If the existing saved potential of the neighbouring cell is larger than the
+                        sum of current cell potential,  heuristic distance from current cell to goal cell,
                         and traversal cost to the neighbouring cell, we need to update the potential of the
                         neighbouring cell. Hence, you have to push the cell to the buffer ``overflowPotentArr_".
                         An example, for the top-left cell of current cell, the condition to be checked is
                             potarr_[n - nx_ - 1] > pot + sqrt(2) * costarr_[n - nx_ - 1]
                         Please note the difference in the formula to that of above task.
                     */
-
+                    if (potarr_[n - nx_ - 1] > pot + SQUAREROOT2 * costarr_[n - nx_ - 1])
+                        push_over(n - nx_ - 1); // top left
+                    if (potarr_[n - nx_ + 1] > pot + SQUAREROOT2 * costarr_[n - nx_ + 1])
+                        push_over(n - nx_ + 1); // top right
+                    if (potarr_[n + nx_ - 1] > pot + SQUAREROOT2 * costarr_[n + nx_ - 1])
+                        push_over(n + nx_ - 1); // bottom left
+                    if (potarr_[n + nx_ + 1] > pot + SQUAREROOT2 * costarr_[n + nx_ + 1])
+                        push_over(n + nx_ + 1); // bottom right
                 }
             }
         }
-
     }
 
     int NavFn::calcPath(int n)
     {
-        if (npathbuf_ < n) {
-            if (pathx_) {delete[] pathx_;}
-            if (pathy_) {delete[] pathy_;}
+        if (npathbuf_ < n)
+        {
+            if (pathx_)
+            {
+                delete[] pathx_;
+            }
+            if (pathy_)
+            {
+                delete[] pathy_;
+            }
             pathx_ = new float[n];
             pathy_ = new float[n];
             npathbuf_ = n;
         }
-        int * st;
+        int *st;
         st = goal_;
         int stc = st[1] * nx_ + st[0];
         npath_ = 0;
 
-        for(int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pathx_[npath_] = stc % nx_;
             pathy_[npath_] = stc / nx_;
             npath_++;
-            
-            if (potarr_[stc] < COST_NEUTRAL) {
-                return npath_;  // done!
+
+            if (potarr_[stc] < COST_NEUTRAL)
+            {
+                return npath_; // done!
             }
 
             int stcnx = stc + nx_;
@@ -407,8 +495,50 @@ namespace iar_astar_planner
                 find a cell with minimum potential, and save its index to stc, and its
                 potential to ''minp"
             */
+            if (potarr_[stc - 1] < minp)
+            {
+                minp = potarr_[stc - 1];
+                minc = stc - 1;
+            } // left
+            if (potarr_[stc + 1] < minp)
+            {
+                minp = potarr_[stc + 1];
+                minc = stc + 1;
+            } // right
+            if (potarr_[stcpx] < minp)
+            {
+                minp = potarr_[stcpx];
+                minc = stcpx;
+            } // top
+            if (potarr_[stcnx] < minp)
+            {
+                minp = potarr_[stcnx];
+                minc = stcnx;
+            } // bottom
+            if (potarr_[stcpx - 1] < minp)
+            {
+                minp = potarr_[stcpx - 1];
+                minc = stcpx - 1;
+            } // top-left
+            if (potarr_[stcpx + 1] < minp)
+            {
+                minp = potarr_[stcpx + 1];
+                minc = stcpx + 1;
+            } // top-right
+            if (potarr_[stcnx - 1] < minp)
+            {
+                minp = potarr_[stcnx - 1];
+                minc = stcnx - 1;
+            } // bottom-left
+            if (potarr_[stcnx + 1] < minp)
+            {
+                minp = potarr_[stcnx + 1];
+                minc = stcnx + 1;
+            } // bottom-right
 
-            if(minp >= curp)
+            stc = minc;
+
+            if (minp >= curp)
             {
                 RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "[PathCalc] Zero gradient");
                 return 0;
@@ -418,5 +548,5 @@ namespace iar_astar_planner
         RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "[PathCalc] No path found, path too long");
         return 0;
     }
-    
+
 }
