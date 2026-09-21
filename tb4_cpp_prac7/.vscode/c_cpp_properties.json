@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/install/tb4_cpp_prac7/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/ICTE4001_Prac_AllSolutions/tb4_cpp_prac1/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/ICTE4001_Prac_AllSolutions/tb4_cpp_prac2/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/ICTE4001_Prac_AllSolutions/tb4_cpp_prac3/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/ICTE4001_Prac_AllSolutions/tb4_cpp_prac5/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/ICTE4001_Prac_AllSolutions/tb4_cpp_prac6/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/ICTE4001_Prac_AllSolutions/tb4_cpp_prac7/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/tb4_cpp_prac1/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/tb4_cpp_prac2/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/tb4_cpp_prac3/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/tb4_cpp_prac5/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/tb4_cpp_prac6/include/**",
+        "/home/curtinrobotai/Dropbox/Teaching/ICTE4001/prac_ws/src/tb4_cpp_prac7/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

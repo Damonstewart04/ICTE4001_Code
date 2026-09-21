@@ -1,0 +1,5 @@
+<library path="iar_astar_planner">
+	<class name="iar_astar_planner/IarAstarPlanner" type="iar_astar_planner::IarAstarPlanner" base_class_type="nav2_core::GlobalPlanner">
+	  <description></description>
+	</class>
+</library>
