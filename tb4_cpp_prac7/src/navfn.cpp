@@ -228,6 +228,7 @@ namespace iar_astar_planner
         int dx = goal_[0] - start_[0];
         int dy = goal_[1] - start_[1];
         float h = std::sqrt(dx * dx + dy * dy);
+        potentThreshInc_ += h;
 
         int goalCell = goal_[1] * nx_ + goal_[0];
         bool propSuccess = false;
